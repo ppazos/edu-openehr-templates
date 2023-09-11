@@ -46,4 +46,16 @@ class App {
    {
       def opt = Services.traverse(pathToOpt)
    }
+
+    @Command(
+      name = 'constraint',
+      description = 'Show constraint at path from a given template'
+   )
+   public void constraintAtPathCommand(
+      @Parameters(arity = "1") Path pathToOpt,
+      @Parameters(arity = "1") String templatePath
+   )
+   {
+      Services.render(pathToOpt, templatePath)
+   }
 }
