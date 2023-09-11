@@ -3,12 +3,36 @@
  */
 package com.cabolabs.edu.openehr.templates
 
-class App {
-    String getGreeting() {
-        return 'Hello World!'
-    }
+import picocli.CommandLine
+import picocli.CommandLine.Command
+import picocli.CommandLine.Option
+import picocli.CommandLine.Parameters
+import java.nio.file.Path
 
-    static void main(String[] args) {
-        println new App().greeting
-    }
+@Command
+class App {
+
+   static void main(String[] args)
+   {
+      int rc = new CommandLine(new App()).execute(args)
+      System.exit(rc)
+   }
+
+   @Command(
+      name = 'parse',
+      description = 'Parses a given template in OPT format'
+   )
+   public void parseCommand(
+      @Parameters(arity = "1") Path pathToOpt
+   )
+   {
+      def opt = Services.parse(pathToOpt)
+
+      if (opt)
+      {
+         println "Template parsed correctly."
+         println "Template ID = "+ opt.templateId
+         println "Concept = "+ opt.concept
+      }
+   }
 }
