@@ -35,4 +35,15 @@ class App {
          println "Concept = "+ opt.concept
       }
    }
+
+   @Command(
+      name = 'traverse',
+      description = 'Traverses a given template in OPT format'
+   )
+   public void traverseCommand(
+      @Parameters(arity = "1") Path pathToOpt
+   )
+   {
+      def opt = Services.traverse(pathToOpt)
+   }
 }
