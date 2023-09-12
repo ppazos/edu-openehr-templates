@@ -7,6 +7,11 @@ import com.cabolabs.openehr.opt.model.OperationalTemplate
 import com.cabolabs.openehr.opt.model.*
 import com.cabolabs.openehr.opt.model.primitive.*
 import com.cabolabs.openehr.opt.model.domain.*
+import com.cabolabs.openehr.opt.model.validation.ValidationResult
+import com.cabolabs.openehr.rm_1_0_2.data_types.text.CodePhrase
+import com.cabolabs.openehr.rm_1_0_2.data_types.quantity.DvQuantity
+import com.cabolabs.openehr.rm_1_0_2.data_types.quantity.DvCount
+import com.cabolabs.openehr.rm_1_0_2.support.identification.*
 
 class Services {
 
@@ -58,6 +63,181 @@ class Services {
       }
    }
 
+   static boolean validate(Path pathToOpt, String templatePath, String data)
+   {
+      opt = parse(pathToOpt)
+      //ArchetypeConstraint c = Services.getConstraint(opt, templatePath)
+
+      List<Constraint> cs = opt.getNodes(templatePath)
+
+      for (Constraint c: cs)
+      {
+         println c.class.simpleName
+         println c.rmTypeName
+
+         // NOTE: if the constraint is open (any allowed) the AOM type could be CComplexObject
+         // without any children, so we need to allow that by checking the rmTypeName is a data value.
+         if (!isDataValue(c.rmTypeName) /*&& !(c instanceof CDomainType)*/ && !(c instanceof PrimitiveObjectNode))
+         {
+            println "Only domain and primitive constraints are allowed "+ c.class.simpleName +" given for type "+ c.rmTypeName
+            return false
+         }
+
+         ValidationResult result
+
+         switch(c)
+         {
+            case CDvQuantity: // data=magnitude|units
+
+               // parse data
+               def parts = data.split("\\|")
+               if (parts.size() < 2)
+               {
+                  // if it's not the right type, there could be an alternative constraint in cs that the data matches with
+                  //throw new Exception("Can't parse DV_QUANTITY it should be in the format 'magnitude|units'")
+                  continue
+               }
+
+               Double magnitude = new Double(parts[0])
+               String units = parts[1]
+
+               def dv_data = new DvQuantity(
+                  magnitude: magnitude,
+                  units: units
+               )
+
+               result = c.isValid(dv_data)
+
+               if (!result.isValid)
+               {
+                  println result.message
+               }
+               else return true // in the false case continue matching the next constraint alternative
+
+            break
+            case CDvOrdinal: // `value` or `terminology::code` or `value|terminology::code`
+
+               // parse data
+               if (data.contains("|")) // value|terminology::code
+               {
+                  def parts = data.split("\\|")
+                  int value = new Integer(parts[0])
+
+                  if (!parts[1].contains("::"))
+                  {
+                     throw new Exception("CodePhrase data should be formatted like this: terminology::code")
+                  }
+
+                  def term_code = parts[1].split("::")
+
+                  def terminology_id = term_code[0]
+                  def code = term_code[1]
+
+                  if (!c.list) return true // any allowed
+
+                  // NOTE: all the values should match
+                  // Ordinal item = c.list.find{
+                  //    it.value == value && it.symbol.codeString == code && it.symbol.terminologyId.value == terminology_id
+                  // }
+
+                  // if (!item) return false // "value ${value} is not valid"
+               }
+               else if (data.contains(":")) // code::terminology
+               {
+                  if (!data.contains("::"))
+                  {
+                     throw new Exception("CodePhrase data should be formatted like this: terminology::code")
+                  }
+
+                  def term_code = data.split("::")
+
+                  def terminology_id = term_code[0]
+                  def code = term_code[1]
+
+                  // Ordinal item = c.list.find{
+                  //    it.symbol.codeString == code && it.symbol.terminologyId.value == terminology_id
+                  // }
+
+                  // if (!item) return false // "value ${value} is not valid"
+               }
+               else // value (number)
+               {
+                  int value = new Integer(data)
+
+                  // Ordinal item = c.list.find{
+                  //    it.value == value
+                  // }
+
+                  // if (!item) return false // "value ${value} is not valid"
+               }
+
+            break
+            case CCodePhrase: // terminology::code
+
+               if (!data.contains("::"))
+               {
+                  // if it's not the right type, there could be an alternative constraint in cs that the data matches with
+                  //throw new Exception("CodePhrase data should be formatted like this: terminology::code")
+                  continue
+               }
+
+               def term_code = data.split("::")
+
+               def terminology_id = term_code[0]
+               def code = term_code[1]
+
+               def dv_data = new CodePhrase(
+                  terminology_id: new TerminologyId(
+                     value: terminology_id
+                  ),
+                  code_string: code
+               )
+
+               result = c.isValid(dv_data)
+
+               if (!result.isValid)
+               {
+                  println result.message
+               }
+               else return true // in the false case continue matching the next constraint alternative
+
+            break
+            // TODO: primitives
+            default: // c is CComplexObject
+               if (c.attributes)
+               {
+                  println "> "+ c.rmTypeName
+                  switch (c.rmTypeName)
+                  {
+                     case 'DV_COUNT':
+                        def dv_data = new DvCount(
+                           magnitude: Integer.parseInt(data) // This will fail if data is not an int
+                        )
+
+                        result = c.isValid(dv_data)
+
+                        if (!result.isValid)
+                        {
+                           println result.message
+                        }
+                        else return true
+                     break
+                     default:
+                       println "Not supported ${c.rmTypeName}"
+                  }
+               }
+               else // if there are no attributes, any valud is valid!
+               {
+                  return true
+               }
+               // if it doesn't have attributes == any allowed
+         }
+      }
+
+      // we return on the valid cases above
+      return false
+   }
+
 
    // UTILITIES
    // --------------------------------------
@@ -83,6 +263,21 @@ class Services {
 
       return archetype_id
    }
+
+   static boolean isDataValue(String rmTypeName)
+   {
+      // NOTE: some DV's are missing, this is just for teaching, for completeness those types should be added.
+      [
+         'DV_TEXT', 'DV_CODED_TEXT', 'DV_QUANTITY', 'DV_COUNT',
+         'DV_ORDINAL', 'DV_TIME', 'DV_DATE', 'DV_DATE_TIME', 'DV_PROPORTION',
+         'DV_DURATION', 'DV_BOOLEAN', 'DV_IDENTIFIER', 'DV_MULTIMEDIA', 'DV_PARSABLE',
+         'DV_URI'
+      ].contains(rmTypeName)
+   }
+
+
+   // INNER CLASSES
+   // --------------------------------------
 
    static class Traverse {
 

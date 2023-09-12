@@ -58,4 +58,19 @@ class App {
    {
       Services.render(pathToOpt, templatePath)
    }
+
+
+   @Command(
+      name = 'validate',
+      description = 'Validates some data against a given template and path'
+   )
+   public void dataValidateCommand(
+      @Parameters(arity = "1") Path pathToOpt,
+      @Parameters(arity = "1") String templatePath,
+      @Parameters(arity = "1") String data
+   )
+   {
+      println Services.validate(pathToOpt, templatePath, data)
+      println data
+   }
 }
