@@ -6,19 +6,25 @@ openEHR templates in software: examples for CaboLabs' training courses
 
 ```shell
 $ gradle build
-$ gradle fatJar
 ```
 
 ## Run from Gradle
 
-NOTE: when running with gradle, the current working directory is ./app not ./ so the path to archetype needs an extra ../ if using relative paths.
+NOTE: when running with gradle, the current working directory is ./app not ./ so the path is relative to ./app
 
-### Try parse an archetype (returns an error if the OPT is not correct)
+
+### Try parse a template (returns an error if the OPT is not correct)
 
 ```shell
-$ gradle run --args="parse ../../openEHR-OPT/src/main/resources/opts/test_all_types_en_v1.opt"
+$ gradle run --args="parse src/main/resources/opts/test_all_types_en_v1.opt"
 ```
 
+
+### Show internal structure of template
+
+```shell
+$ gradle run --args="traverse src/main/resources/opts/test_all_types_en_v1.opt"
+```
 
 
 ### Show constraint at a template path
@@ -30,6 +36,11 @@ $ gradle run --args="constraint ../../openEHR-OPT/src/main/resources/opts/test_a
 ```shell
 $ gradle run --args="constraint ../../openEHR-OPT/src/main/resources/opts/test_all_types_en_v1.opt /content[archetype_id=openEHR-EHR-OBSERVATION.test_all_types.v1]/data[at0001]/events[at0002]/data[at0003]/items[at0013]/value"
 ```
+
+```shell
+$ gradle run --args="constraint src/main/resources/opts/test_all_types_en_v1.opt /content[archetype_id=openEHR-EHR-EVALUATION.test_all_types.v1]/data[at0001]/items[at0009]/value"
+```
+
 
 ### Data validation
 
@@ -46,4 +57,47 @@ NOTE 3: a template path could point to a node that has alternative data types, s
 
 ```shell
 $ gradle run --args="validate ../../openEHR-OPT/src/main/resources/opts/test_all_types_en_v1.opt /content[archetype_id=openEHR-EHR-OBSERVATION.test_all_types.v1]/data[at0001]/events[at0002]/data[at0003]/items[at0007]/value 1000|mg"
+```
+
+
+## Build fat jar
+
+```shell
+$ gradle fatJar
+```
+
+
+### Parse template
+
+```shell
+$ java -jar app/build/libs/edu-openehr-templates-all.jar parse app/src/main/resources/opts/demographics.opt
+```
+
+
+### Show internal structure of template
+
+```shell
+$ java -jar app/build/libs/edu-openehr-templates-all.jar traverse app/src/main/resources/opts/demographics.opt 
+```
+
+
+### Show constraint at a template path
+
+```shell
+$ java -jar app/build/libs/edu-openehr-templates-all.jar constraint app/src/main/resources/opts/test_all_types_en_v1.opt /content[archetype_id=openEHR-EHR-OBSERVATION.test_all_types.v1]/data[at0001]/events[at0002]/data[at0003]/items[at0007]/value
+```
+
+```shell
+$ java -jar app/build/libs/edu-openehr-templates-all.jar constraint app/src/main/resources/opts/test_all_types_en_v1.opt /content[archetype_id=openEHR-EHR-EVALUATION.test_all_types.v1]/data[at0001]/items[at0009]/value
+```
+
+
+### Data validation
+
+```shell
+$ java -jar app/build/libs/edu-openehr-templates-all.jar validate app/src/main/resources/opts/test_all_types_en_v1.opt /content[archetype_id=openEHR-EHR-OBSERVATION.test_all_types.v1]/data[at0001]/events[at0002]/data[at0003]/items[at0007]/value "1000|mg"
+```
+
+```shell
+$ java -jar app/build/libs/edu-openehr-templates-all.jar validate app/src/main/resources/opts/test_all_types_en_v1.opt /content[archetype_id=openEHR-EHR-EVALUATION.test_all_types.v1]/data[at0001]/items[at0009]/value "120|mm[Hg]"
 ```

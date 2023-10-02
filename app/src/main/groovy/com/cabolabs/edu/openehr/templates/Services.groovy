@@ -38,6 +38,7 @@ class Services {
       return parser.parse(text)
    }
 
+
    static void traverse(Path pathToOpt)
    {
       opt = parse(pathToOpt)
@@ -51,6 +52,7 @@ class Services {
       traverse.run(opt)
    }
 
+
    static void render(Path pathToOpt, String templatePath)
    {
       opt = parse(pathToOpt)
@@ -63,6 +65,7 @@ class Services {
       }
    }
 
+
    static boolean validate(Path pathToOpt, String templatePath, String data)
    {
       opt = parse(pathToOpt)
@@ -72,8 +75,8 @@ class Services {
 
       for (Constraint c: cs)
       {
-         println c.class.simpleName
-         println c.rmTypeName
+         // println c.class.simpleName
+         // println c.rmTypeName
 
          // NOTE: if the constraint is open (any allowed) the AOM type could be CComplexObject
          // without any children, so we need to allow that by checking the rmTypeName is a data value.
@@ -204,9 +207,11 @@ class Services {
             break
             // TODO: primitives
             default: // c is CComplexObject
+
+               // NOTE: this don't validate the data structure, to be correct, the data type should match the c.rmTypeName
                if (c.attributes)
                {
-                  println "> "+ c.rmTypeName
+                  //println "> "+ c.rmTypeName
                   switch (c.rmTypeName)
                   {
                      case 'DV_COUNT':
@@ -427,12 +432,19 @@ class Services {
 
       def render(ObjectNode o)
       {
-         println o.rmTypeName +': '+ o.templatePath
+         if (!o.attributes)
+         {
+            println o.rmTypeName +' (no constraints)'   
+         }
+         else
+         {
+            println o.rmTypeName +': '+ o.templatePath
 
-         println o.rmTypeName +' ('+ o.text + ') <'+ o.class.simpleName +'>'
+            println o.rmTypeName +' ('+ o.text + ') <'+ o.class.simpleName +'>'
 
-         // NOTE: this will detect any missing methods specific for the constraint type
-         println o.getClass()
+            // NOTE: this will detect any missing methods specific for the constraint type
+            println o.getClass()
+         }
       }
 
       def render(PrimitiveObjectNode c)
